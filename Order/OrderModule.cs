@@ -4,11 +4,8 @@ using Microsoft.AspNetCore.Routing;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Order.Application;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+using Order.Contracts;
+using Order.Infrastructure;
 
 namespace Order
 {
@@ -19,26 +16,34 @@ namespace Order
             IConfiguration configuration)
         {
             services.AddApplication();
+            services.AddInfrastructure(configuration);
             return services;
         }
 
         public static IEndpointRouteBuilder MapOrdersEndpoints(
             this IEndpointRouteBuilder app)
         {
-            app.MapPost("/api/orders", (string product, IOrderService service) =>
-            {
-                var order = service.Create(product);
-                return Results.Ok(order);
-            });
+            var group = app.MapGroup("/api/orders")
+                .WithTags("Orders");
 
-            app.MapGet("/api/orders/{id}", (Guid id, IOrderService service) =>
+            group.MapPost("/", async (CreateOrderRequest request, IOrderService service) =>
             {
-                var order = service.GetById(id);
+                var order = await service.CreateAsync(request);
+                return Results.Created($"/api/orders/{order.Id}", order);
+            })
+            .WithName("CreateOrder")
+            .Produces<OrderResponse>(StatusCodes.Status201Created);
+
+            group.MapGet("/{id:guid}", async (Guid id, IOrderService service) =>
+            {
+                var order = await service.GetByIdAsync(id);
                 return order is not null ? Results.Ok(order) : Results.NotFound();
-            });
+            })
+            .WithName("GetOrder")
+            .Produces<OrderResponse>(StatusCodes.Status200OK)
+            .Produces(StatusCodes.Status404NotFound);
 
             return app;
         }
     }
-
 }

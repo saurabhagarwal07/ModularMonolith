@@ -10,6 +10,8 @@
     <Folder Include="Domain\" />
     <Folder Include="Application\" />
     <Folder Include="Infrastructure\" />
+	<FrameworkReference Include="Microsoft.AspNetCore.App" />
+	<PackageReference Include="Microsoft.Extensions.Configuration.Abstractions" Version="10.0.1" />
   </ItemGroup>
 
 </Project>
